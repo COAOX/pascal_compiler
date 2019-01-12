@@ -7,21 +7,21 @@ extern ofstream outputStream;
 extern SymbolTable symbolTable;
 stringstream ss;
 
-void generateAssignment(Symbol left_side, Symbol right_side)
+void generateAssignment(Symbol &left_side, Symbol &right_side)
 {
     if (left_side.type == right_side.type)
     {
-        writeToOutput("mov" + getTypeSuffix(right_side.type) + getVariableAddress(right_side) + "," + getVariableAddress(left_side));
+        writeToOutput("\tmov" + getTypeSuffix(left_side.type) + getVariableAddress(right_side) + "," + getVariableAddress(left_side));
     }
     else
     {
         if (left_side.type == INTEGER && right_side.type == REAL)
         {
-            writeToOutput("realtoint.r\t" + getVariableAddress(right_side) + ',' + getVariableAddress(left_side));
+            writeToOutput("\trealtoint.r\t" + getVariableAddress(right_side) + ',' + getVariableAddress(left_side));
         }
         else if (left_side.type == REAL && right_side.type == INTEGER)
         {
-            writeToOutput("inttoreal.i\t" + getVariableAddress(right_side) + ',' + getVariableAddress(left_side));
+            writeToOutput("\tinttoreal.i\t" + getVariableAddress(right_side) + ',' + getVariableAddress(left_side));
         }
     }
 }
@@ -32,6 +32,12 @@ void generateExpression(int op, Symbol symbol1, Symbol symbol2, Symbol result)
     writeToOutput(getOperatorText(op, result.type) + getVariableAddress(symbol1) + ',' + getVariableAddress(symbol2) + ',' + getVariableAddress(result));
 }
 
+void generateRelopJump(int op, Symbol symbol1, Symbol symbol2, Symbol label)
+{
+    castUp(symbol1, symbol2);
+    writeToOutput(getOperatorText(op, symbol1.type) + getVariableAddress(symbol1) + ',' + getVariableAddress(symbol2) + ',' + label.name);
+}
+
 void generateLabel(Symbol label)
 {
     writeToOutput(label.name + ":");
@@ -39,7 +45,7 @@ void generateLabel(Symbol label)
 
 void generateJump(Symbol label)
 {
-    writeToOutput("jump.i\t #" + label.name);
+    writeToOutput("\tjump.i\t #" + label.name);
 }
 
 string getOperatorText(int op, int type)
@@ -84,20 +90,20 @@ string getOperatorText(int op, int type)
         result = "jl";
         break;
     }
-    return result + getTypeSuffix(type);
+    return '\t' + result + getTypeSuffix(type);
 }
 void castUp(Symbol &symbol1, Symbol &symbol2)
 {
     if (symbol1.type == INTEGER && symbol2.type == REAL)
     {
         int newVar = symbolTable.insertTempSymbol(REAL);
-        writeToOutput("inttoreal.i\t" + getVariableAddress(symbol1) + ',' + getVariableAddress(symbolTable[newVar]));
+        writeToOutput("\tinttoreal.i\t" + getVariableAddress(symbol1) + ',' + getVariableAddress(symbolTable[newVar]));
         symbol1 = symbolTable[newVar];
     }
     else if (symbol1.type == REAL && symbol2.type == INTEGER)
     {
         int newVar = symbolTable.insertTempSymbol(REAL);
-        writeToOutput("inttoreal.i\t" + getVariableAddress(symbol2) + ',' + getVariableAddress(symbolTable[newVar]));
+        writeToOutput("\tinttoreal.i\t" + getVariableAddress(symbol2) + ',' + getVariableAddress(symbolTable[newVar]));
         symbol2 = symbolTable[newVar];
     }
     else if (symbol1.type != symbol2.type)
@@ -106,7 +112,7 @@ void castUp(Symbol &symbol1, Symbol &symbol2)
     }
 }
 
-string getVariableAddress(Symbol symbol)
+string getVariableAddress(Symbol &symbol)
 {
     string result = "";
     if (symbol.token == NUM)
@@ -135,7 +141,7 @@ string getTypeSuffix(int type)
     }
     else
     {
-        yyerror("invalid type on assignment");
+        yyerror("invalid type in get type suffix");
     }
 }
 
@@ -143,6 +149,7 @@ void writeToOutput(string str)
 {
     ss << "\n"
        << str;
+    writeToFile();
 }
 
 void writeToFile()

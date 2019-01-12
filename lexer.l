@@ -34,7 +34,7 @@ of 					"of"
 %%	
 
 [\t|" "]			{}
-\r					{lineno++;}
+[\r]				{lineno++;}
 
 {integer}			{yylval = INTEGER; return INTEGER;}
 {real}				{yylval = REAL; return REAL;}
@@ -61,7 +61,7 @@ while				{return WHILE;}
 {sign}				{yylval = getToken(yytext); return SIGN;}
 {assignop}			{return ASSIGN;}
 
-{id}				{yylval = symbolTable.lookupLocalOrInsert(yytext, ID, NONE); return ID;}
+{id}				{yylval = symbolTable.lookupLocalOrInsert(yytext, ID, NONE); cout << "accessing " << yytext << yylval << '\n'; return ID;}
 {digits}			{yylval = symbolTable.lookupLocalOrInsert(yytext, NUM, INTEGER); return NUM;}
 {num}				{yylval = symbolTable.lookupLocalOrInsert(yytext, NUM, REAL); return NUM;}
 

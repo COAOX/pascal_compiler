@@ -49,12 +49,13 @@ int yyparse();
 void yyerror(char const *s);
 
 //emitter
-void generateAssignment(Symbol symbol1, Symbol symbol2);
-string getVariableAddress(Symbol symbol);
+void generateAssignment(Symbol& symbol1, Symbol& symbol2);
+string getVariableAddress(Symbol& symbol);
 string getTypeSuffix(int type);
 void castUp(Symbol& symbol1, Symbol& symbol2);
 string getOperatorText(int op, int type);
 void generateExpression(int op, Symbol symbol1, Symbol symbol2, Symbol result);
+void generateRelopJump(int op, Symbol symbol1, Symbol symbol2, Symbol label);
 void generateLabel(Symbol label);
 void generateJump(Symbol label);
 void writeToOutput(string str);

@@ -69,7 +69,6 @@ identifier_list:
 declarations:
 	declarations VAR identifier_list ':' type ';'
 		{
-            symbolTable.dump();
             for(auto &index : identifierVector)
             {
                 Symbol& symbol = symbolTable[index];
@@ -225,10 +224,9 @@ statement:
 
 variable:
     ID
-        {
-            checkDeclaredVariable($1);
-            $$ = $1;
-        }
+    {
+        cout << "parser received a " << $1 << '\n';
+    }
     | ID '[' expression ']'
 	;
 
@@ -255,21 +253,19 @@ expression_list:
 
 expression:
     simple_expression
-        {
-            $$ = $1;
-        }
     | simple_expression RELOP simple_expression
         {
+            cout << "in";
             int labelCorrect = symbolTable.insertLabel();
-			generateExpression($2, symbolTable[$1],symbolTable[$3],symbolTable[labelCorrect]);
+			generateRelopJump($2, symbolTable[$1],symbolTable[$3],symbolTable[labelCorrect]);
 			int result = symbolTable.insertTempSymbol(INTEGER);
 			int incorrect = symbolTable.insertConst("0",INTEGER);
-            generateAssignment(symbolTable[incorrect],symbolTable[result]);
+            generateAssignment(symbolTable[result],symbolTable[incorrect]);
 			int labelDone = symbolTable.insertLabel();
 			generateJump(symbolTable[labelDone]);
             generateLabel(symbolTable[labelCorrect]);
 			int correct = symbolTable.insertConst("1",INTEGER);
-            generateAssignment(symbolTable[correct],symbolTable[result]);
+            generateAssignment(symbolTable[result],symbolTable[correct]);
             generateLabel(symbolTable[labelDone]);
             $$ = result;
         }
@@ -313,9 +309,6 @@ term:
 
 factor:
     variable
-        {	
-            $$ = $1;
-        }
 	| ID '(' expression_list ')'
         {
         }

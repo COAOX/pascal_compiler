@@ -9,7 +9,7 @@ extern int yydebug;
 
 int main(int argc, char *argv[])
 {
-    yydebug = 0;
+    yydebug = 1;
     FILE *inputFile;
 
     inputFile = fopen(argv[1], "r");
@@ -29,14 +29,9 @@ int main(int argc, char *argv[])
         return -1;
     }
 
-    //symbolTable.initSymbolTable();
-
-    stringstream streamString;
-    streamString << "        jump.i  #lab0                   ;jump.i  lab0";
-    outputStream.write(streamString.str().c_str(), streamString.str().size());
 
     yyparse();
-    //printSymbolTable();
+    symbolTable.dump();
 
     outputStream.close();
     fclose(inputFile);

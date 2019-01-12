@@ -69,6 +69,8 @@ SymbolTable::SymbolTable()
 	lab0.isReference = false;
 	lab0.token = LABEL;
 	symbolTable.push_back(lab0);
+
+	generateJump(lab0);
 }
 
 int SymbolTable::lookup(string name)
