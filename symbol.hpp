@@ -25,7 +25,7 @@ class Symbol
 	int address;
 	string name;
 	Array array;
-	vector<int> parameterList;
+	vector<Array> parameterList;
 };
 
 class SymbolTable
@@ -33,10 +33,11 @@ class SymbolTable
 	int tempsCount = 0;
 	int labelsCount = 1;
 	int globalAddressTop = 0;
-	int localAddressTop = 0;
+
 	vector<Symbol> symbolTable;
 
   public:
+  	int localAddressTop = 0;
 	Symbol &operator[](int index)
 	{
 		return symbolTable[index];

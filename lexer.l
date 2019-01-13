@@ -15,9 +15,9 @@ digit 				[0-9]
 id					{letter}({letter}|{digit})*
 
 digits				{digit}+
-optional_fraction 	"."{digits}?
+optional_fraction 	"."{digits}
 optional_exponent	[eE][+-]?{digits}
-num					{digits}(optional_fraction){optional_exponent}?
+num					{digits}{optional_fraction}{optional_exponent}?
 
 relop				"="|"<>"|"<"|"<="|">="|">"
 sign				"+"|"-"
@@ -61,9 +61,9 @@ while				{return WHILE;}
 {sign}				{yylval = getToken(yytext); return SIGN;}
 {assignop}			{return ASSIGN;}
 
-{id}				{yylval = symbolTable.lookupLocalOrInsert(yytext, ID, NONE); cout << "accessing " << yytext << yylval << '\n'; return ID;}
-{digits}			{yylval = symbolTable.lookupLocalOrInsert(yytext, NUM, INTEGER); return NUM;}
+{id}				{yylval = symbolTable.lookupLocalOrInsert(yytext, ID, NONE); return ID;}
 {num}				{yylval = symbolTable.lookupLocalOrInsert(yytext, NUM, REAL); return NUM;}
+{digits}			{yylval = symbolTable.lookupLocalOrInsert(yytext, NUM, INTEGER); return NUM;}
 
 <<EOF>>				{return DONE;}
 .					{return *yytext;}

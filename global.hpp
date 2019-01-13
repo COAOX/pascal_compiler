@@ -6,6 +6,7 @@
 #include <fstream>
 #include <sstream>
 #include <iostream>
+#include <algorithm>
 #include "symbol.hpp"
 
 #define LABEL 303
@@ -47,6 +48,7 @@ int yylex_destroy();
 //parser
 int yyparse();
 void yyerror(char const *s);
+int passParameters(Symbol& func);
 
 //emitter
 void generateAssignment(Symbol& symbol1, Symbol& symbol2);
@@ -58,5 +60,10 @@ void generateExpression(int op, Symbol symbol1, Symbol symbol2, Symbol result);
 void generateRelopJump(int op, Symbol symbol1, Symbol symbol2, Symbol label);
 void generateLabel(Symbol label);
 void generateJump(Symbol label);
+void generateFunction(Symbol function);
+void generatePush(Symbol symbol);
+void generateCall(Symbol function);
+void generateArrayAddress(Symbol arrayBase, Symbol offset, Symbol result);
+void fillEnter(int size);
 void writeToOutput(string str);
 void writeToFile();

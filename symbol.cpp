@@ -38,6 +38,7 @@ int SymbolTable::insertConst(string val, int type)
 	{
 		num = insert(val, NUM, type);
 	}
+	return num;
 }
 
 int SymbolTable::insertLabel()
@@ -146,8 +147,8 @@ int SymbolTable::allocateNewVariable(Symbol &symbol)
 	}
 	else
 	{
-		symbol.address = localAddressTop;
 		localAddressTop -= getSymbolSize(symbol);
+		symbol.address = localAddressTop;
 	}
 }
 
@@ -181,6 +182,7 @@ void SymbolTable::clearLocalSymbols()
 		}
 	}
 	symbolTable.erase(symbolTable.begin() + index, symbolTable.end());
+	localAddressTop = 0;
 }
 
 string tokenToString(int token)

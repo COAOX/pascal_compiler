@@ -9,7 +9,7 @@ extern int yydebug;
 
 int main(int argc, char *argv[])
 {
-    yydebug = 1;
+    yydebug = 0;
     FILE *inputFile;
 
     inputFile = fopen(argv[1], "r");

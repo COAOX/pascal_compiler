@@ -4,11 +4,13 @@
 
 	using namespace std;
 
-	int startOffsertParamtersFunProcHelper = 8;	// 8 dla proc 12 dla fun
+	int parameterTop;
 	vector<int> identifierVector;
+    vector<Array> parametersVector;
     Array tempArrayInfo;
 	void yyerror(char const* s);
     extern SymbolTable symbolTable;
+    vector<int> passedParameters;
 %}
 
 %token 	PROGRAM
@@ -47,7 +49,7 @@ program:
     compound_statement
     '.'
         {
-            writeToOutput("exit");
+            writeToOutput("\texit");
             writeToFile();
         }
     eof
@@ -125,24 +127,52 @@ subprogram_declarations:
 
 subprogram_declaration:
     subprogram_head declarations compound_statement
+    {
+        //finished function declaration
+        writeToOutput("\tleave");
+        writeToOutput("\treturn");
+        fillEnter(symbolTable.localAddressTop*-1);
+        symbolTable.dump();
+        symbolTable.clearLocalSymbols();
+        inGlobalScope = true;
+        parameterTop = 8;
+    }
 	;
 
 subprogram_head:
     FUN ID
         {	
+            checkDeclaredVariable($2);
+            symbolTable[$2].token = FUN;
+            inGlobalScope = false;
+            parameterTop = 12; //old BP, retaddr, output
+            generateFunction(symbolTable[$2]);
         }
     arguments
         {	
+            symbolTable[$2].parameterList = parametersVector;
+            parametersVector.clear();
         }
     ':' standard_type
         {	
+            symbolTable[$2].type = $7;
+            int ret = symbolTable.insert("return"+symbolTable[$2].name, VAR, $7);
+            symbolTable[ret].isReference = true;
+            symbolTable[ret].address = 8;
         }
     ';'
 	| PROC ID
         { 	
+            checkDeclaredVariable($2);
+            symbolTable[$2].token = PROC;
+            inGlobalScope = false;
+            parameterTop = 8;
+            generateFunction(symbolTable[$2]);
         }
     arguments
         {	
+            symbolTable[$2].parameterList = parametersVector;
+            parametersVector.clear();
         }
     ';'
 	;
@@ -150,6 +180,13 @@ subprogram_head:
 arguments:
     '(' parameter_list ')'
         {
+            std::reverse(passedParameters.begin(),passedParameters.end()); //parameters are saved in memory in reverse order
+            for (auto& argument : passedParameters)
+            {
+                symbolTable[argument].address = parameterTop;
+                parameterTop += 4; //reference int every time
+            }
+            parametersVector.clear();
         }
 	|
 	;
@@ -157,9 +194,56 @@ arguments:
 parameter_list:
     identifier_list ':' type
         {	
+            for (auto &index : identifierVector)
+            {
+                symbolTable[index].isReference = true;
+                cout << symbolTable[index].name <<  index;
+                
+                if ($3 == ARRAY)
+                {
+                    symbolTable[index].token = ARRAY;
+                    symbolTable[index].array = tempArrayInfo;
+                    symbolTable[index].type = tempArrayInfo.type;
+                }
+                else
+                {
+                    symbolTable[index].token = VAR;
+                    symbolTable[index].type = $3;
+                    //for ease of trasnport array is used as a type transporter
+                    tempArrayInfo.type = $3;
+                    tempArrayInfo.start = -1;
+                    tempArrayInfo.end = -1;
+                }
+                parametersVector.push_back(tempArrayInfo);
+                passedParameters.push_back(index);
+            }
+            identifierVector.clear();
+            symbolTable.dump();
         }
 	| parameter_list ';' identifier_list ':' type
         {
+            for (auto &index : identifierVector)
+            {
+                symbolTable[index].isReference = true;
+                if ($5 == ARRAY)
+                {
+                    symbolTable[index].token = ARRAY;
+                    symbolTable[index].array = tempArrayInfo;
+                    symbolTable[index].type = tempArrayInfo.type;
+                }
+                else
+                {
+                    symbolTable[index].token = VAR;
+                    symbolTable[index].type = $5;
+                    //for ease of trasnport array is used as a type transporter
+                    tempArrayInfo.type = $5;
+                    tempArrayInfo.start = -1;
+                    tempArrayInfo.end = -1;
+                }
+                parametersVector.push_back(tempArrayInfo);
+                passedParameters.push_back(index);
+            }
+            identifierVector.clear();      
         }
 	;
 
@@ -188,7 +272,7 @@ statement:
         {
             int beforeElse = symbolTable.insertLabel();
             int num = symbolTable.insertConst("0",INTEGER);
-            generateExpression(EQ,symbolTable[$2],symbolTable[num],symbolTable[beforeElse]); //jump to else
+            generateRelopJump(EQ,symbolTable[$2],symbolTable[num],symbolTable[beforeElse]); //jump to else
             $2 = beforeElse;
         }
     THEN statement
@@ -213,7 +297,7 @@ statement:
     expression DO
         {
             int zero = symbolTable.insertConst("0",INTEGER);
-            generateExpression(EQ,symbolTable[$3],symbolTable[zero],symbolTable[$2]); //jump to after loop
+            generateRelopJump(EQ,symbolTable[$3],symbolTable[zero],symbolTable[$2]); //jump to after loop
         }
     statement
         {	
@@ -224,19 +308,89 @@ statement:
 
 variable:
     ID
-    {
-        cout << "parser received a " << $1 << '\n';
-    }
     | ID '[' expression ']'
+        {
+            if (symbolTable[$3].type == REAL)
+            {
+                yyerror("real-typed subscript");
+            }
+            Symbol& arrayBase = symbolTable[$1];
+            int subscript = symbolTable.insertTempSymbol(INTEGER);
+            int start = symbolTable.insertConst(to_string(arrayBase.array.start),INTEGER);
+            generateExpression(MINUS,symbolTable[$3],symbolTable[start],symbolTable[subscript]);
+
+            int elementSize = symbolTable.insertConst(
+                (arrayBase.array.type == REAL? "8":"4"),INTEGER
+            );
+
+            generateExpression(MUL,symbolTable[subscript],symbolTable[elementSize],symbolTable[subscript]);
+
+            int elementAddress = symbolTable.insertTempSymbol(INTEGER);
+
+            generateArrayAddress(arrayBase,symbolTable[subscript],symbolTable[elementAddress]);
+
+            symbolTable[elementAddress].isReference = true;
+            symbolTable[elementAddress].type = arrayBase.array.type;
+            $$ = elementAddress;
+        }
 	;
 
 procedure_statement:
     ID
         {	
-            writeToOutput("\tcall.i #" + symbolTable[$1].name);
+            checkDeclaredVariable($1);
+            Symbol& symbol = symbolTable[$1];
+            if (symbol.token == FUN || symbol.token == PROC)
+            {
+                if (symbol.parameterList.size()>0)
+                {
+                    yyerror("not enough parameters");
+                }
+                else
+                {
+                    generateCall(symbol);
+                }
+            }
+            else 
+            {
+                yyerror("not a procedure");
+            }
         }
 	| ID '(' expression_list ')'
         {	
+            if ($1 == symbolTable.lookup("read"))
+            {
+                for (auto& index : identifierVector)
+                {
+                    writeToOutput("\tread " + getVariableAddress(symbolTable[index]));
+                }
+            }
+            else if ($1 == symbolTable.lookup("write"))
+            {
+                for (auto& index : identifierVector)
+                {
+                    writeToOutput("\twrite " + getVariableAddress(symbolTable[index]));
+                }
+            }
+            else
+            {
+                checkDeclaredVariable($1);
+                Symbol& func = symbolTable[$1];
+
+                if (func.token == FUN || func.token == PROC)
+                {
+                    $$ = passParameters(func);
+                }
+                else if (func.token == PROC)
+                {
+                    passParameters(func);
+                }
+                else
+                {
+                    yyerror("no such function");
+                }
+            }
+            passedParameters.clear();
         }
 	;
 
@@ -255,7 +409,6 @@ expression:
     simple_expression
     | simple_expression RELOP simple_expression
         {
-            cout << "in";
             int labelCorrect = symbolTable.insertLabel();
 			generateRelopJump($2, symbolTable[$1],symbolTable[$3],symbolTable[labelCorrect]);
 			int result = symbolTable.insertTempSymbol(INTEGER);
@@ -309,8 +462,43 @@ term:
 
 factor:
     variable
+    {
+        //can be a function because pascal
+        int temp = $1;
+        Symbol& symbol = symbolTable[temp];
+        if (symbol.token == FUN)
+        {
+            if (symbol.parameterList.size()>0)
+            {
+                yyerror("not enough arguments");
+            }
+            temp = symbolTable.insertTempSymbol(symbol.type);
+            generatePush(symbolTable[temp]);
+            generateCall(symbolTable[$1]);
+            writeToOutput("\tincsp.i\t#4");            
+        }
+        else if (symbol.token == PROC)
+        {
+            yyerror("no return from procedure");
+        }
+        $$ = temp;
+    }
 	| ID '(' expression_list ')'
         {
+            checkDeclaredVariable($1);
+            Symbol& func = symbolTable[$1];
+            if(func.token == FUN)
+            {
+                $$ = passParameters(func);
+            }
+            else if (func.token == PROC)
+            {
+                yyerror("no return from procedure");
+            }
+            else 
+            {
+                yyerror("no such function");
+            }
         }
 	| NUM
 	| '(' expression ')'
@@ -319,6 +507,21 @@ factor:
         }
 	| NOT factor
 			{	
+                int labelZero = symbolTable.insertLabel();
+                int zero = symbolTable.insertConst("0",INTEGER);
+                generateRelopJump(EQ,symbolTable[zero],symbolTable[$2],symbolTable[labelZero]);
+
+                int result = symbolTable.insertTempSymbol(INTEGER);
+                generateAssignment(symbolTable[result],symbolTable[zero]);
+
+                int finish = symbolTable.insertLabel();
+                generateJump(symbolTable[finish]);
+                generateLabel(symbolTable[labelZero]);
+
+                int notZero = symbolTable.insertConst("1",INTEGER);
+                generateAssignment(symbolTable[result],symbolTable[notZero]);
+                generateLabel(symbolTable[finish]);
+                $$ = result;
 			}
 	;
 
@@ -334,4 +537,44 @@ eof:
 void yyerror(char const *s)
 {
 	printf("error on line %d: %s \n",lineno, s);
+}
+
+int passParameters(Symbol& func)
+{
+    if (passedParameters.size() != func.parameterList.size())
+    {
+        yyerror("not enough arguments!");
+    }
+    
+    int incspCount = 0;
+    for (int i = 0; i < passedParameters.size(); i++)
+    {
+        int type = func.parameterList[i].type;
+        int index = passedParameters[i];
+        if (symbolTable[index].token == NUM)
+        {
+            int newindex = symbolTable.insertTempSymbol(type);
+            generateAssignment(symbolTable[newindex],symbolTable[index]);
+            index = newindex;
+        }
+        if (type != symbolTable[index].type)
+        {
+            yyerror("type mismatch in function parameters");
+        }
+
+        generatePush(symbolTable[index]);
+        incspCount += 4;
+    }
+    int index = 0;
+
+    if (func.token == FUN)
+    {
+        index = symbolTable.insertTempSymbol(func.type);
+        generatePush(symbolTable[index]);
+        incspCount += 4;
+    }
+
+    generateCall(func);
+    writeToOutput("\tincsp.i\t#" + to_string(incspCount));
+    return index;
 }

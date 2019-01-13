@@ -48,6 +48,36 @@ void generateJump(Symbol label)
     writeToOutput("\tjump.i\t #" + label.name);
 }
 
+void generateFunction(Symbol function)
+{
+    cout << function.name;
+    writeToOutput(function.name + ":");
+    writeToOutput("\tenter.i #__"); //come back and fill this in
+}
+
+void generateCall(Symbol function)
+{
+    writeToOutput(getOperatorText(CALL,INTEGER) + "#" + function.name);
+}
+
+void generatePush(Symbol symbol)
+{
+    writeToOutput(getOperatorText(PUSH,INTEGER) + "#" + getVariableAddress(symbol));
+}
+
+void generateArrayAddress(Symbol arrayBase, Symbol offset, Symbol result)
+{
+    writeToOutput(getOperatorText(PLUS, INTEGER) + "#" + getVariableAddress(arrayBase) + ',' + getVariableAddress(offset) + ',' + getVariableAddress(result));
+}
+
+
+void fillEnter(int size)
+{
+    string stream = ss.str();
+    ss.str("");
+    stream.replace(stream.find("__"),2,to_string(size));
+    writeToOutput(stream);
+}
 string getOperatorText(int op, int type)
 {
     string result = "";
@@ -88,6 +118,12 @@ string getOperatorText(int op, int type)
         break;
     case L:
         result = "jl";
+        break;
+    case PUSH:
+        result = "push";
+        break;
+    case CALL:
+        result = "call";
         break;
     }
     return '\t' + result + getTypeSuffix(type);
@@ -147,9 +183,9 @@ string getTypeSuffix(int type)
 
 void writeToOutput(string str)
 {
+    //cout << "\n" << str;
     ss << "\n"
        << str;
-    writeToFile();
 }
 
 void writeToFile()
