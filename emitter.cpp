@@ -178,6 +178,7 @@ string getTypeSuffix(int type)
     else
     {
         yyerror("invalid type in get type suffix");
+        return "";
     }
 }
 

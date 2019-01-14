@@ -132,11 +132,13 @@ int SymbolTable::allocateNewVariable(Symbol &symbol)
 	{
 		symbol.address = globalAddressTop;
 		globalAddressTop += getSymbolSize(symbol);
+		return globalAddressTop;
 	}
 	else
 	{
 		localAddressTop -= getSymbolSize(symbol);
 		symbol.address = localAddressTop;
+		return localAddressTop;
 	}
 }
 
