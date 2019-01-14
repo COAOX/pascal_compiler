@@ -51,7 +51,6 @@ class SymbolTable
 	int lookup(string name);
 	int lookupLocal(string name);
 	int lookupLocalOrInsert(string s, int token, int type);
-	int lookupFunction(string s);
 	int allocateNewVariable(Symbol& symbol);
 	int getSymbolSize(Symbol& symbol);
 	void clearLocalSymbols();

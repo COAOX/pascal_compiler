@@ -6,11 +6,11 @@
 
 	int parameterTop;
 	vector<int> identifierVector;
-    vector<Array> parametersVector;
+    vector<Array> parameterTypes;
     Array tempArrayInfo;
 	void yyerror(char const* s);
     extern SymbolTable symbolTable;
-    vector<int> passedParameters;
+    vector<int> parameterVariables;
 %}
 
 %token 	PROGRAM
@@ -108,8 +108,8 @@ type:
 	| ARRAY '[' NUM '.' '.' NUM ']' OF standard_type
 			{
                 $$ = ARRAY;
-                tempArrayInfo.start = $3;
-                tempArrayInfo.end = $6;
+                tempArrayInfo.start = std::stoi(symbolTable[$3].name);
+                tempArrayInfo.end = std::stoi(symbolTable[$6].name);
                 tempArrayInfo.type = $9;
 			}
 	;
@@ -150,8 +150,8 @@ subprogram_head:
         }
     arguments
         {	
-            symbolTable[$2].parameterList = parametersVector;
-            parametersVector.clear();
+            symbolTable[$2].parameterList = parameterTypes;
+            parameterTypes.clear();
         }
     ':' standard_type
         {	
@@ -171,8 +171,8 @@ subprogram_head:
         }
     arguments
         {	
-            symbolTable[$2].parameterList = parametersVector;
-            parametersVector.clear();
+            symbolTable[$2].parameterList = parameterTypes;
+            parameterTypes.clear();
         }
     ';'
 	;
@@ -180,13 +180,13 @@ subprogram_head:
 arguments:
     '(' parameter_list ')'
         {
-            std::reverse(passedParameters.begin(),passedParameters.end()); //parameters are saved in memory in reverse order
-            for (auto& argument : passedParameters)
+            std::reverse(parameterVariables.begin(),parameterVariables.end()); //parameters are saved in memory in reverse order
+            for (auto& argument : parameterVariables)
             {
                 symbolTable[argument].address = parameterTop;
                 parameterTop += 4; //reference int every time
             }
-            parametersVector.clear();
+            parameterVariables.clear();
         }
 	|
 	;
@@ -214,8 +214,8 @@ parameter_list:
                     tempArrayInfo.start = -1;
                     tempArrayInfo.end = -1;
                 }
-                parametersVector.push_back(tempArrayInfo);
-                passedParameters.push_back(index);
+                parameterTypes.push_back(tempArrayInfo);
+                parameterVariables.push_back(index);
             }
             identifierVector.clear();
             symbolTable.dump();
@@ -240,8 +240,8 @@ parameter_list:
                     tempArrayInfo.start = -1;
                     tempArrayInfo.end = -1;
                 }
-                parametersVector.push_back(tempArrayInfo);
-                passedParameters.push_back(index);
+                parameterTypes.push_back(tempArrayInfo);
+                parameterVariables.push_back(index);
             }
             identifierVector.clear();      
         }
@@ -390,7 +390,7 @@ procedure_statement:
                     yyerror("no such function");
                 }
             }
-            passedParameters.clear();
+            identifierVector.clear();
         }
 	;
 
@@ -541,16 +541,15 @@ void yyerror(char const *s)
 
 int passParameters(Symbol& func)
 {
-    if (passedParameters.size() != func.parameterList.size())
+    if (identifierVector.size() != func.parameterList.size())
     {
         yyerror("not enough arguments!");
     }
-    
     int incspCount = 0;
-    for (int i = 0; i < passedParameters.size(); i++)
+    for (int i = 0; i < identifierVector.size(); i++)
     {
         int type = func.parameterList[i].type;
-        int index = passedParameters[i];
+        int index = identifierVector[i];
         if (symbolTable[index].token == NUM)
         {
             int newindex = symbolTable.insertTempSymbol(type);
@@ -573,7 +572,7 @@ int passParameters(Symbol& func)
         generatePush(symbolTable[index]);
         incspCount += 4;
     }
-
+    identifierVector.clear();
     generateCall(func);
     writeToOutput("\tincsp.i\t#" + to_string(incspCount));
     return index;

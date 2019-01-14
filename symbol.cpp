@@ -126,18 +126,6 @@ int SymbolTable::lookupLocalOrInsert(string s, int token, int type)
 	return value;
 }
 
-int SymbolTable::lookupFunction(string s)
-{
-	for (int index = 0; index < symbolTable.size(); index++)
-	{
-		if (symbolTable[index].name == s && (symbolTable[index].token == FUN || symbolTable[index].token == PROC))
-		{
-			return index;
-		}
-	}
-	return -1;
-}
-
 int SymbolTable::allocateNewVariable(Symbol &symbol)
 {
 	if (inGlobalScope == true)
@@ -154,17 +142,17 @@ int SymbolTable::allocateNewVariable(Symbol &symbol)
 
 int SymbolTable::getSymbolSize(Symbol &symbol)
 {
-	if (symbol.isReference == true || symbol.type == INTEGER)
+	if (symbol.token == ARRAY)
+	{
+		return ((symbol.array.end - symbol.array.start + 1) * (symbol.type == INTEGER ? 4 : 8));
+	}
+	else if (symbol.isReference == true || symbol.type == INTEGER)
 	{
 		return 4;
 	}
 	else if (symbol.type == REAL)
 	{
 		return 8;
-	}
-	else if (symbol.token == ARRAY)
-	{
-		return (symbol.array.end - symbol.array.start + 1) * (symbol.type == INTEGER ? 4 : 8);
 	}
 	else
 		return 0;
