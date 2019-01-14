@@ -35,7 +35,7 @@ void generateExpression(int op, Symbol symbol1, Symbol symbol2, Symbol result)
 void generateRelopJump(int op, Symbol symbol1, Symbol symbol2, Symbol label)
 {
     castUp(symbol1, symbol2);
-    writeToOutput(getOperatorText(op, symbol1.type) + getVariableAddress(symbol1) + ',' + getVariableAddress(symbol2) + ',' + label.name);
+    writeToOutput(getOperatorText(op, symbol1.type) + getVariableAddress(symbol1) + ',' + getVariableAddress(symbol2) + ",#" + label.name);
 }
 
 void generateLabel(Symbol label)
@@ -62,12 +62,12 @@ void generateCall(Symbol function)
 
 void generatePush(Symbol symbol)
 {
-    writeToOutput(getOperatorText(PUSH,INTEGER) + "#" + getVariableAddress(symbol));
+    writeToOutput(getOperatorText(PUSH,INTEGER) + getVariableAddress(symbol,'#'));
 }
 
 void generateArrayAddress(Symbol arrayBase, Symbol offset, Symbol result)
 {
-    writeToOutput(getOperatorText(PLUS, INTEGER) + "#" + getVariableAddress(arrayBase) + ',' + getVariableAddress(offset) + ',' + getVariableAddress(result));
+    writeToOutput(getOperatorText(PLUS, INTEGER) + getVariableAddress(arrayBase,'#') + ',' + getVariableAddress(offset) + ',' + getVariableAddress(result));
 }
 
 
@@ -148,7 +148,7 @@ void castUp(Symbol &symbol1, Symbol &symbol2)
     }
 }
 
-string getVariableAddress(Symbol &symbol)
+string getVariableAddress(Symbol &symbol, char op)
 {
     string result = "";
     if (symbol.token == NUM)
@@ -157,7 +157,8 @@ string getVariableAddress(Symbol &symbol)
     }
     else if (symbol.token == VAR || symbol.token == ARRAY)
     {
-        result += (symbol.isReference) ? "*" : "";
+        result += (op == '#' && !symbol.isReference) ? "#" : "";
+        result += (symbol.isReference && op!='#') ? "*" : "";
         result += (!symbol.isGlobal) ? "BP" : "";
         result += (!symbol.isGlobal & symbol.address >= 0) ? "+" : "";
         result += to_string(symbol.address);

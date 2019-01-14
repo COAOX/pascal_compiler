@@ -362,14 +362,14 @@ procedure_statement:
             {
                 for (auto& index : identifierVector)
                 {
-                    writeToOutput("\tread " + getVariableAddress(symbolTable[index]));
+                    writeToOutput("\tread" + getTypeSuffix(symbolTable[index].type) + getVariableAddress(symbolTable[index]));
                 }
             }
             else if ($1 == symbolTable.lookup("write"))
             {
                 for (auto& index : identifierVector)
                 {
-                    writeToOutput("\twrite " + getVariableAddress(symbolTable[index]));
+                    writeToOutput("\twrite" + getTypeSuffix(symbolTable[index].type) + getVariableAddress(symbolTable[index]));
                 }
             }
             else

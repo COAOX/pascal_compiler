@@ -1,2 +1,4 @@
 *.o
 /reference/*
+comp
+output.asm

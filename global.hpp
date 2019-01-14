@@ -52,7 +52,7 @@ int passParameters(Symbol& func);
 
 //emitter
 void generateAssignment(Symbol& symbol1, Symbol& symbol2);
-string getVariableAddress(Symbol& symbol);
+string getVariableAddress(Symbol& symbol, char op = 0);
 string getTypeSuffix(int type);
 void castUp(Symbol& symbol1, Symbol& symbol2);
 string getOperatorText(int op, int type);
