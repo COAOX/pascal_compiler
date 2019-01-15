@@ -377,7 +377,7 @@ procedure_statement:
                 checkDeclaredVariable($1);
                 Symbol& func = symbolTable[$1];
 
-                if (func.token == FUN || func.token == PROC)
+                if (func.token == FUN)
                 {
                     $$ = passParameters(func);
                 }

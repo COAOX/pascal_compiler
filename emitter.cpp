@@ -70,7 +70,6 @@ void generateArrayAddress(Symbol arrayBase, Symbol offset, Symbol result)
     writeToOutput(getOperatorText(PLUS, INTEGER) + getVariableAddress(arrayBase,'#') + ',' + getVariableAddress(offset) + ',' + getVariableAddress(result));
 }
 
-
 void fillEnter(int size)
 {
     string stream = ss.str();
@@ -78,6 +77,7 @@ void fillEnter(int size)
     stream.replace(stream.find("__"),2,to_string(size));
     writeToOutput(stream);
 }
+
 string getOperatorText(int op, int type)
 {
     string result = "";
@@ -100,6 +100,9 @@ string getOperatorText(int op, int type)
         break;
     case OR:
         result = "or";
+        break;
+    case MOD:
+        result = "mod";
         break;
     case EQ:
         result = "je";
