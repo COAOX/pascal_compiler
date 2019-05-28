@@ -272,7 +272,7 @@ statement:
         {
             int beforeElse = symbolTable.insertLabel();
             int num = symbolTable.insertConst("0",INTEGER);
-            generateRelopJump(EQ,symbolTable[$2],symbolTable[num],symbolTable[beforeElse]); //jump to else
+            generateCondJ(EQ,symbolTable[$2],symbolTable[num],symbolTable[beforeElse]); //jump to else
             $2 = beforeElse;
         }
     THEN statement
@@ -297,7 +297,7 @@ statement:
     expression DO
         {
             int zero = symbolTable.insertConst("0",INTEGER);
-            generateRelopJump(EQ,symbolTable[$3],symbolTable[zero],symbolTable[$2]); //jump to after loop
+            generateCondJ(EQ,symbolTable[$3],symbolTable[zero],symbolTable[$2]); //jump to after loop
         }
     statement
         {	
