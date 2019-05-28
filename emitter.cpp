@@ -9,21 +9,7 @@ stringstream ss;
 
 void generateAssignment(Symbol &left_side, Symbol &right_side)
 {
-    if (left_side.type == right_side.type)
-    {
-        writeToOutput("\tmov" + getTypeSuffix(left_side.type) + getVariableAddress(right_side) + "," + getVariableAddress(left_side));
-    }
-    else
-    {
-        if (left_side.type == INTEGER && right_side.type == REAL)
-        {
-            writeToOutput("\trealtoint.r\t" + getVariableAddress(right_side) + ',' + getVariableAddress(left_side));
-        }
-        else if (left_side.type == REAL && right_side.type == INTEGER)
-        {
-            writeToOutput("\tinttoreal.i\t" + getVariableAddress(right_side) + ',' + getVariableAddress(left_side));
-        }
-    }
+     writeToOutput("\tasn" + getVariableAddress(right_side) + "," + getVariableAddress(left_side));
 }
 
 void generateExpression(int op, Symbol symbol1, Symbol symbol2, Symbol result)
@@ -40,19 +26,19 @@ void generateRelopJump(int op, Symbol symbol1, Symbol symbol2, Symbol label)
 
 void generateLabel(Symbol label)
 {
-    writeToOutput(label.name + ":");
+    writeToOutput("\tlabel\t"+label.name);
 }
 
 void generateJump(Symbol label)
 {
-    writeToOutput("\tjump.i\t #" + label.name);
+    writeToOutput("\tgoto\t #" + label.name);
 }
 
 void generateFunction(Symbol function)
 {
     cout << function.name;
-    writeToOutput(function.name + ":");
-    writeToOutput("\tenter.i #__"); //come back and fill this in
+    writeToOutput("\tlabel\t" + function.name);
+    //writeToOutput("\tenter.i #__"); //come back and fill this in
 }
 
 void generateCall(Symbol function)
@@ -129,7 +115,7 @@ string getOperatorText(int op, int type)
         result = "call";
         break;
     }
-    return '\t' + result + getTypeSuffix(type);
+    return '\t' + result;
 }
 void castUp(Symbol &symbol1, Symbol &symbol2)
 {
