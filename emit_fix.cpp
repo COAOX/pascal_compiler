@@ -92,7 +92,7 @@ void generateFunction(Symbol function)
 {
     cout << function.name;
     writeToOutput("\tlabel\t" + function.name);
-    //writeToOutput("\tenter.i #__"); //come back and fill this in
+    writeToOutput("\tenter.i #__"); //come back and fill this in
 }
 
 void generateCall(Symbol function)
