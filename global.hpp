@@ -58,6 +58,7 @@ void castUp(Symbol& symbol1, Symbol& symbol2);
 string getOperatorText(int op, int type);
 void generateExpression(int op, Symbol symbol1, Symbol symbol2, Symbol result);
 void generateRelopJump(int op, Symbol symbol1, Symbol symbol2, Symbol label);
+void generateCondJ(int op, Symbol symbol1, Symbol symbol2, Symbol label);
 void generateLabel(Symbol label);
 void generateJump(Symbol label);
 void generateFunction(Symbol function);
